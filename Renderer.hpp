@@ -5,8 +5,8 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
-#define _WIDTH 256
-#define _HEIGHT 256
+#define _WIDTH 512
+#define _HEIGHT 512
 #define _BPP 32
 
 namespace detail {

@@ -4,7 +4,7 @@
 namespace _impl {
 // Fetched most of this code from: http://lodev.org/cgtutor/randomnoise.html
 
-#define noiseDepth 64
+#define noiseDepth 16
 
 #define RGB_S(b, g, r)                                                         \
   ((COLORREF)(((BYTE)(r) | ((WORD)((BYTE)(g)) << 8)) |                         \
@@ -20,7 +20,7 @@ void generateNoise() {
       }
 }
 
-double smoothNoise(double x, double y, double z) {
+inline double smoothNoise(double x, double y, double z) {
   // get fractional part of x and y
   double fractX = x - int(x);
   double fractY = y - int(y);
@@ -51,7 +51,7 @@ double smoothNoise(double x, double y, double z) {
   return value;
 }
 
-double turbulence(double x, double y, double z, double size) {
+inline double turbulence(double x, double y, double z, double size) {
   double value = 0.0, initialSize = size;
 
   while (size >= 1) {
@@ -64,7 +64,7 @@ double turbulence(double x, double y, double z, double size) {
 
 typedef unsigned char uchar;
 
-detail::Uint32 HSLtoRGB(uchar _h, uchar _s, uchar _l) {
+inline detail::Uint32 HSLtoRGB(uchar _h, uchar _s, uchar _l) {
   float r, g, b, h, s, l; // this function works with floats between 0 and 1
   float temp1, temp2, tempr, tempg, tempb;
   h = _h / 256.0;
@@ -125,13 +125,12 @@ detail::Uint32 HSLtoRGB(uchar _h, uchar _s, uchar _l) {
 
 } // namespace _impl
 
-
 // This is the guts of the renderer, without this it will do nothing.
 DWORD WINAPI Update(LPVOID lpParameter) { // poll for some kind of event here to
                                           // signal that we want to exit.
   _impl::generateNoise();
   double t(0.0);
-  Renderer* g_renderer = static_cast<Renderer*>(lpParameter);
+  Renderer *g_renderer = static_cast<Renderer *>(lpParameter);
 
   while (g_renderer->IsRunning()) {
 
@@ -139,13 +138,14 @@ DWORD WINAPI Update(LPVOID lpParameter) { // poll for some kind of event here to
 
     for (int x = 0; x < _WIDTH; x++) {
       for (int y = 0; y < _HEIGHT; y++) {
-        unsigned int L(192 +
-                       (unsigned char)(_impl::turbulence(x, y, t, 32)) / 4);
+        unsigned int L(
+            192 +
+            static_cast<unsigned char>(_impl::turbulence(x, y, t, 32)) / 4);
         *buffer = _impl::HSLtoRGB(169, 255, L);
         buffer++;
       }
     }
-    t += 12.0;
+    t += 3.0;
 
     g_renderer->screen.Flip();
     g_renderer->updateThread.Delay(1);
@@ -153,7 +153,6 @@ DWORD WINAPI Update(LPVOID lpParameter) { // poll for some kind of event here to
 
   return 0;
 }
-
 
 int main(int argc, char *args[]) {
   const char *const myclass = "Cloudy";
