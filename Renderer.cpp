@@ -45,8 +45,9 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor,
   return TRUE;
 }
 
-Renderer::Renderer(const char *const className, LPTHREAD_START_ROUTINE callback)
-    : screen(_WIDTH, _HEIGHT, _BPP), updateThread(callback) {
+Renderer::Renderer(const char *const className, LPTHREAD_START_ROUTINE callback,
+                   detail::IBitmapRenderer *renderer)
+    : screen(_WIDTH, _HEIGHT, _BPP, renderer), updateThread(callback) {
   g_renderer = this;
 
   HDC windowDC;

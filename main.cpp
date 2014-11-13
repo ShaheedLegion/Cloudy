@@ -123,6 +123,18 @@ inline detail::Uint32 HSLtoRGB(uchar _h, uchar _s, uchar _l) {
   return RGB_S((r * 255.0), (g * 255.0), (b * 255.0));
 }
 
+
+class BitmapRenderer : public detail::IBitmapRenderer {
+public:
+	BitmapRenderer(){}
+	~BitmapRenderer(){}
+
+	void RenderToBitmap(HDC dc) override {
+		SetTextColor(dc, 0);
+		TextOut(dc, 0, 0, (LPCSTR)"Testing", 7);
+	}
+};
+
 } // namespace _impl
 
 // This is the guts of the renderer, without this it will do nothing.
@@ -156,7 +168,8 @@ DWORD WINAPI Update(LPVOID lpParameter) { // poll for some kind of event here to
 
 int main(int argc, char *args[]) {
   const char *const myclass = "Cloudy";
-  Renderer renderer(myclass, &Update);
+  _impl::BitmapRenderer bmRenderer;
+  Renderer renderer(myclass, &Update, &bmRenderer);
 
   return 0;
 }
