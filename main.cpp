@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include "Renderer.hpp"
+#include "FileOperations.hpp"
 
 namespace _impl {
 // Fetched most of this code from: http://lodev.org/cgtutor/randomnoise.html
@@ -123,18 +124,6 @@ inline detail::Uint32 HSLtoRGB(uchar _h, uchar _s, uchar _l) {
   return RGB_S((r * 255.0), (g * 255.0), (b * 255.0));
 }
 
-
-class BitmapRenderer : public detail::IBitmapRenderer {
-public:
-	BitmapRenderer(){}
-	~BitmapRenderer(){}
-
-	void RenderToBitmap(HDC dc) override {
-		SetTextColor(dc, 0);
-		TextOut(dc, 0, 0, (LPCSTR)"Testing", 7);
-	}
-};
-
 } // namespace _impl
 
 // This is the guts of the renderer, without this it will do nothing.
@@ -166,9 +155,50 @@ DWORD WINAPI Update(LPVOID lpParameter) { // poll for some kind of event here to
   return 0;
 }
 
+DWORD WINAPI HandleOutput(LPVOID lpParameter){
+
+	//Need some way of signalling that the thread has ended.
+	std::string startingDirectory("C:\\test");
+	std::vector<std::string> files;
+	operations::ListFiles(startingDirectory, files);
+
+	detail::IBitmapRenderer* outp(static_cast<detail::IBitmapRenderer*>(lpParameter));
+	if (outp)
+		outp->HandleOutput(files);
+
+return 0;
+}
+
+class BitmapRenderer : public detail::IBitmapRenderer {
+public:
+	BitmapRenderer(LPTHREAD_START_ROUTINE getOutputCB) : m_renderThread(getOutputCB), m_hasOutput(false) {
+	m_renderThread.Start(static_cast<LPVOID>(this));
+	}
+	~BitmapRenderer(){}
+
+	void RenderToBitmap(HDC dc) override {
+		SetTextColor(dc, 0);
+		TextOut(dc, 0, 0, (LPCSTR)"Testing", 7);
+
+		if (m_hasOutput){
+			TextOut(dc, 0, 20, (LPCSTR)"Got output", 7);
+		}
+	}
+
+	void HandleOutput(const std::vector<std::string>& output) {
+		m_output = output;
+		m_hasOutput = true;
+	}
+
+protected:
+	detail::RendererThread m_renderThread;
+	std::vector<std::string> m_output;
+	bool m_hasOutput;
+};
+
 int main(int argc, char *args[]) {
   const char *const myclass = "Cloudy";
-  _impl::BitmapRenderer bmRenderer;
+  BitmapRenderer bmRenderer(&HandleOutput);
   Renderer renderer(myclass, &Update, &bmRenderer);
 
   return 0;

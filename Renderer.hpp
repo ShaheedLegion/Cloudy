@@ -4,9 +4,11 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#include <string>
+#include <vector>
 
-#define _WIDTH 512
-#define _HEIGHT 512
+#define _WIDTH 256
+#define _HEIGHT 256
 #define _BPP 32
 
 namespace detail {
@@ -14,6 +16,7 @@ namespace detail {
 class IBitmapRenderer {
 public:
   virtual void RenderToBitmap(HDC screenDC) = 0;
+  virtual void HandleOutput(const std::vector<std::string>& output) =0 ;
 };
 
 class RendererThread {
@@ -86,7 +89,8 @@ public:
     if (m_bitmapRenderer)
       m_bitmapRenderer->RenderToBitmap(m_dc);
 
-    BitBlt(m_screenDC, 0, 0, m_w, m_h, m_dc, 0, 0, SRCCOPY);
+    //BitBlt(m_screenDC, 0, 0, m_w, m_h, m_dc, 0, 0, SRCCOPY);
+	StretchBlt(m_screenDC, 0, 0, m_w << 1, m_h << 1, m_dc, 0, 0, m_w, m_h, SRCCOPY);
   }
 
   Uint32 *GetPixels() { return reinterpret_cast<Uint32 *>(m_backBuffer); }

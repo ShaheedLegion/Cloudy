@@ -69,7 +69,7 @@ Renderer::Renderer(const char *const className, LPTHREAD_START_ROUTINE callback,
 
     HWND window = CreateWindowEx(0, className, "Utility Renderer",
                                  WS_POPUPWINDOW, displayRC.left, displayRC.top,
-                                 _WIDTH, _HEIGHT, 0, 0, GetModuleHandle(0), 0);
+                                 _WIDTH * 2, _HEIGHT * 2, 0, 0, GetModuleHandle(0), 0);
     if (window) {
 
       windowDC = GetWindowDC(window);
