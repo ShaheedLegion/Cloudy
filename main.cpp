@@ -159,12 +159,12 @@ DWORD WINAPI HandleOutput(LPVOID lpParameter){
 
 	//Need some way of signalling that the thread has ended.
 	std::string startingDirectory("C:\\test");
-	std::vector<std::string> files;
-	operations::ListFiles(startingDirectory, files);
+	structures::tree* root = new structures::tree(startingDirectory);
+	operations::ListFiles(startingDirectory, root);
 
 	detail::IBitmapRenderer* outp(static_cast<detail::IBitmapRenderer*>(lpParameter));
 	if (outp)
-		outp->HandleOutput(files);
+		outp->HandleOutput(root);
 
 return 0;
 }
@@ -185,14 +185,14 @@ public:
 		}
 	}
 
-	void HandleOutput(const std::vector<std::string>& output) {
-		m_output = output;
+	void HandleOutput(LPVOID output) {
+		m_root = static_cast<structures::tree*>(output);
 		m_hasOutput = true;
 	}
 
 protected:
 	detail::RendererThread m_renderThread;
-	std::vector<std::string> m_output;
+	structures::tree* m_root;
 	bool m_hasOutput;
 };
 

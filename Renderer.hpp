@@ -16,7 +16,7 @@ namespace detail {
 class IBitmapRenderer {
 public:
   virtual void RenderToBitmap(HDC screenDC) = 0;
-  virtual void HandleOutput(const std::vector<std::string>& output) =0 ;
+  virtual void HandleOutput(VOID* output) =0 ;
 };
 
 class RendererThread {
