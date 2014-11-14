@@ -155,45 +155,59 @@ DWORD WINAPI Update(LPVOID lpParameter) { // poll for some kind of event here to
   return 0;
 }
 
-DWORD WINAPI HandleOutput(LPVOID lpParameter){
+DWORD WINAPI HandleOutput(LPVOID lpParameter) {
 
-	//Need some way of signalling that the thread has ended.
-	std::string startingDirectory("C:\\test");
-	structures::tree* root = new structures::tree(startingDirectory);
-	operations::ListFiles(startingDirectory, root);
+  // Need some way of signalling that the thread has ended.
+  std::string startingDirectory("C:\\test");
+  structures::tree *root = new structures::tree(startingDirectory);
+  operations::ListFiles(startingDirectory, root);
 
-	detail::IBitmapRenderer* outp(static_cast<detail::IBitmapRenderer*>(lpParameter));
-	if (outp)
-		outp->HandleOutput(root);
+  detail::IBitmapRenderer *outp(
+      static_cast<detail::IBitmapRenderer *>(lpParameter));
+  if (outp)
+    outp->HandleOutput(root);
 
-return 0;
+  return 0;
 }
 
 class BitmapRenderer : public detail::IBitmapRenderer {
 public:
-	BitmapRenderer(LPTHREAD_START_ROUTINE getOutputCB) : m_renderThread(getOutputCB), m_hasOutput(false) {
-	m_renderThread.Start(static_cast<LPVOID>(this));
-	}
-	~BitmapRenderer(){}
+  BitmapRenderer(LPTHREAD_START_ROUTINE getOutputCB)
+      : m_renderThread(getOutputCB), m_hasOutput(false), m_root(0),
+        m_currentNode(0), m_direction(0), m_directionChanged(false) {
+    m_renderThread.Start(static_cast<LPVOID>(this));
+  }
+  ~BitmapRenderer() {}
 
-	void RenderToBitmap(HDC dc) override {
-		SetTextColor(dc, 0);
-		TextOut(dc, 0, 0, (LPCSTR)"Testing", 7);
+  void RenderToBitmap(HDC dc) override {
+    SetTextColor(dc, 0);
+    TextOut(dc, 0, 0, (LPCSTR) "Testing", 7);
 
-		if (m_hasOutput){
-			TextOut(dc, 0, 20, (LPCSTR)"Got output", 7);
-		}
-	}
+    if (m_hasOutput) {
+      // deal with direction changes here.
+      TextOut(dc, 0, 20, (LPCSTR) "Got output", 7);
+    }
+  }
 
-	void HandleOutput(LPVOID output) {
-		m_root = static_cast<structures::tree*>(output);
-		m_hasOutput = true;
-	}
+  void HandleOutput(LPVOID output) {
+    m_root = static_cast<structures::tree *>(output);
+    m_currentNode = m_root;
+    if (m_root)
+      m_hasOutput = true;
+  }
+
+  void HandleDirection(int direction) {
+    m_direction = direction;
+    m_directionChanged = true;
+  }
 
 protected:
-	detail::RendererThread m_renderThread;
-	structures::tree* m_root;
-	bool m_hasOutput;
+  detail::RendererThread m_renderThread;
+  structures::tree *m_root;
+  structures::tree *m_currentNode;
+  bool m_hasOutput;
+  int m_direction;
+  bool m_directionChanged;
 };
 
 int main(int argc, char *args[]) {

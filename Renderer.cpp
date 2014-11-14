@@ -13,10 +13,28 @@ void HandleKey(WPARAM wp) {
       g_renderer->SetRunning(false);
     PostQuitMessage(0);
     break;
+  case VK_LEFT:
+    if (g_renderer)
+      g_renderer->SetDirection(0);
+    break;
+  case VK_UP:
+    if (g_renderer)
+      g_renderer->SetDirection(1);
+    break;
+  case VK_RIGHT:
+    if (g_renderer)
+      g_renderer->SetDirection(2);
+    break;
+  case VK_DOWN:
+    if (g_renderer)
+      g_renderer->SetDirection(3);
+    break;
   default:
     break;
   }
 }
+
+void Renderer::SetDirection(int direction) { screen.SetDirection(direction); }
 
 long __stdcall WindowProcedure(HWND window, unsigned int msg, WPARAM wp,
                                LPARAM lp) {
@@ -67,9 +85,9 @@ Renderer::Renderer(const char *const className, LPTHREAD_START_ROUTINE callback,
     if (i != monitors.rend())
       displayRC = *i;
 
-    HWND window = CreateWindowEx(0, className, "Utility Renderer",
-                                 WS_POPUPWINDOW, displayRC.left, displayRC.top,
-                                 _WIDTH * 2, _HEIGHT * 2, 0, 0, GetModuleHandle(0), 0);
+    HWND window = CreateWindowEx(
+        0, className, "Utility Renderer", WS_POPUPWINDOW, displayRC.left,
+        displayRC.top, _WIDTH * 2, _HEIGHT * 2, 0, 0, GetModuleHandle(0), 0);
     if (window) {
 
       windowDC = GetWindowDC(window);

@@ -16,7 +16,8 @@ namespace detail {
 class IBitmapRenderer {
 public:
   virtual void RenderToBitmap(HDC screenDC) = 0;
-  virtual void HandleOutput(VOID* output) =0 ;
+  virtual void HandleOutput(VOID *output) = 0;
+  virtual void HandleDirection(int direction) = 0;
 };
 
 class RendererThread {
@@ -79,6 +80,11 @@ public:
     m_dc = memDC;
   }
 
+  void SetDirection(int direction) {
+    if (m_bitmapRenderer)
+      m_bitmapRenderer->HandleDirection(direction);
+  }
+
   void Flip() {
     // We need a mechanism to actually present the buffer to the drawing system.
     unsigned char *temp = m_pixels;
@@ -89,8 +95,9 @@ public:
     if (m_bitmapRenderer)
       m_bitmapRenderer->RenderToBitmap(m_dc);
 
-    //BitBlt(m_screenDC, 0, 0, m_w, m_h, m_dc, 0, 0, SRCCOPY);
-	StretchBlt(m_screenDC, 0, 0, m_w << 1, m_h << 1, m_dc, 0, 0, m_w, m_h, SRCCOPY);
+    // BitBlt(m_screenDC, 0, 0, m_w, m_h, m_dc, 0, 0, SRCCOPY);
+    StretchBlt(m_screenDC, 0, 0, m_w << 1, m_h << 1, m_dc, 0, 0, m_w, m_h,
+               SRCCOPY);
   }
 
   Uint32 *GetPixels() { return reinterpret_cast<Uint32 *>(m_backBuffer); }
@@ -123,6 +130,7 @@ public:
   bool bRunning;
 
   void SetBuffer(unsigned char *buffer, HDC scrDC, HDC memDC);
+  void SetDirection(int direction);
 
 public:
   Renderer(const char *const className, LPTHREAD_START_ROUTINE callback,
