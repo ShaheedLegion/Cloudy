@@ -10,14 +10,85 @@ namespace structures {
 struct tree {
   std::string data;
   std::vector<struct tree *> children;
+  struct tree *parent;
+  bool currentNode;
 
-  tree(const std::string &d) : data(d) {}
+  tree(const std::string &d, struct tree *upper)
+      : data(d), currentNode(false), parent(upper) {}
 
   struct tree *push_back(const std::string &name) {
     // Pushes a child into the list.
-    struct tree *val = new struct tree(name);
+    struct tree *val = new struct tree(name, this);
     children.push_back(val);
     return val;
+  }
+
+  // returns parent, or this if parent is null.
+  struct tree *switch_to_parent() {
+    if (parent) {
+      if (currentNode) {
+        parent->currentNode = true;
+        currentNode = false;
+      }
+      return parent;
+    }
+    return this;
+  }
+
+  struct tree *switch_to_prev_child(struct tree *child) {
+    std::vector<struct tree *>::reverse_iterator it(children.rbegin()),
+        eit(children.rend());
+    for (; it != eit; ++it) {
+      if (child == (*it)) {
+        std::vector<struct tree *>::reverse_iterator temp(it);
+        if (++temp != eit) {
+          child->currentNode = false;
+          (*temp)->currentNode = true;
+          return (*temp);
+        }
+      }
+    }
+    currentNode = false;
+    child->currentNode = true;
+    return child;
+  }
+
+  struct tree *switch_to_next_child(struct tree *child) {
+    std::vector<struct tree *>::iterator it(children.begin()),
+        eit(children.end());
+    for (; it != eit; ++it) {
+      if (child == (*it)) {
+        std::vector<struct tree *>::iterator temp(it);
+        if (++temp != eit) {
+          child->currentNode = false;
+          (*temp)->currentNode = true;
+          return (*temp);
+        }
+      }
+    }
+    currentNode = false;
+    child->currentNode = true;
+    return child;
+  }
+
+  struct tree *select_child(struct tree *child) {
+    if (child == this) {
+      struct tree *val(0);
+      if (children.size())
+        val = children.at(0);
+      if (val) {
+        currentNode = false;
+        val->currentNode = true;
+        return val;
+      }
+      return child;
+    } else if (child) {
+      this->currentNode = false;
+      child->currentNode = true;
+      return child;
+    }
+
+    return this;
   }
 };
 }
@@ -29,30 +100,62 @@ void PrintUsage() {
   Print("FolderMuncher.exe [directory_path]");
 }
 
-void ListFiles(std::string directory, structures::tree *node) {
+std::string AppendFS(const std::string &root, const std::string &node) {
+  return std::string(root + "\\" + node);
+}
+
+void ListFiles(std::string &directory, structures::tree *node) {
   if (directory.empty())
     return; // If we don't have a path, we do nothing.
 
   WIN32_FIND_DATA findData;
   HANDLE fileHandle;
 
-  const std::string spec("*");
-  { // First we try to find files in this directory.
-    fileHandle = FindFirstFile((directory + spec).c_str(), &findData);
+  const std::string allFilesFileSpec("*");
 
-    if (fileHandle == INVALID_HANDLE_VALUE)
-      return; // If the find failed, then we fail immediately.
-    else {
-      do { // If the found item is a directory, then we recurse into it.
-        if ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) {
-          std::string dirName(findData.cFileName);
-          if (dirName.compare(".") && dirName.compare("..")) {
-            ListFiles(std::string(findData.cFileName),
-                      node->push_back(findData.cFileName));
-          }
-        } else // Add the found file to the file list.
-          node->push_back(directory + (findData.cFileName));
+  // First we try to find files in this directory.
+  {
+    fileHandle =
+        FindFirstFile(AppendFS(directory, allFilesFileSpec).c_str(), &findData);
+    // If the find failed, but it wasn't because there are no files that
+    // matches, then we fail with an error.
+    if (fileHandle == INVALID_HANDLE_VALUE) {
+      // If it failed because something other than the file wasn't found, then
+      // we fail immediately.
+      if (GetLastError() != ERROR_FILE_NOT_FOUND)
+        return;
+    } else {
+      do {
+        // If the found item is a directory, then we skip it.
+        if ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+          { node->push_back(AppendFS(directory, findData.cFileName)); }
+        }
       } while (FindNextFile(fileHandle, &findData));
+
+      FindClose(fileHandle);
+    }
+  }
+
+  // Now we go through all the directories in this path so that we can enumerate
+  // them.
+  {
+    fileHandle = FindFirstFile(AppendFS(directory, "*").c_str(), &findData);
+    if (fileHandle == INVALID_HANDLE_VALUE) {
+      // If the error was something other than no directories were found, then
+      // we return a fail response.
+      if (GetLastError() != ERROR_FILE_NOT_FOUND)
+        return;
+    } else {
+      do {
+        std::string fileName(findData.cFileName);
+
+        // Make sure we only do directories.
+        if ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 &&
+            fileName != "." && fileName != "..") {
+          ListFiles(directory + fileName, node->push_back(fileName));
+        }
+      } while (FindNextFile(fileHandle, &findData));
+
       FindClose(fileHandle);
     }
   }

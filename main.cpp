@@ -159,7 +159,7 @@ DWORD WINAPI HandleOutput(LPVOID lpParameter) {
 
   // Need some way of signalling that the thread has ended.
   std::string startingDirectory("C:\\test");
-  structures::tree *root = new structures::tree(startingDirectory);
+  structures::tree *root = new structures::tree(startingDirectory, 0);
   operations::ListFiles(startingDirectory, root);
 
   detail::IBitmapRenderer *outp(
@@ -174,31 +174,86 @@ class BitmapRenderer : public detail::IBitmapRenderer {
 public:
   BitmapRenderer(LPTHREAD_START_ROUTINE getOutputCB)
       : m_renderThread(getOutputCB), m_hasOutput(false), m_root(0),
-        m_currentNode(0), m_direction(0), m_directionChanged(false) {
+        m_currentNode(0), m_direction(0) {
     m_renderThread.Start(static_cast<LPVOID>(this));
   }
   ~BitmapRenderer() {}
 
   void RenderToBitmap(HDC dc) override {
-    SetTextColor(dc, 0);
-    TextOut(dc, 0, 0, (LPCSTR) "Testing", 7);
+    SetTextColor(dc, RGB(255, 255, 255));
+    SetBkColor(dc, RGB(0, 0, 0));
+    TextOut(dc, 0, 0, (LPCSTR) "File System:", strlen("File System:"));
 
     if (m_hasOutput) {
       // deal with direction changes here.
-      TextOut(dc, 0, 20, (LPCSTR) "Got output", 7);
+      if (!PrintNodes(dc, m_currentNode, 0)) {
+        if (m_currentNode && m_currentNode->parent)
+          PrintNodes(dc, m_currentNode->parent, 1);
+      }
     }
   }
 
+  bool PrintNodes(HDC dc, structures::tree *node, int level) {
+    if (!node)
+      return false;
+    int xPos = (10 * level) + 20;
+    int yPos = 20;
+
+    SetBkMode(dc, OPAQUE);
+    SetBkColor(dc, RGB(0, 0, 0));
+
+    if (node->currentNode)
+      SetBkColor(dc, RGB(128, 128, 128));
+
+    TextOut(dc, 0, yPos, (LPCSTR)node->data.c_str(), node->data.length());
+    std::vector<structures::tree *>::iterator it(node->children.begin()),
+        eit(node->children.end());
+    if (it == eit)
+      return false;
+
+    for (; it != eit; ++it) {
+      yPos += 20;
+
+      SetBkColor(dc, RGB(0, 0, 0));
+      if ((*it)->currentNode)
+        SetBkColor(dc, RGB(128, 128, 128));
+
+      TextOut(dc, xPos, yPos, (LPCSTR)(*it)->data.c_str(),
+              (*it)->data.length());
+    }
+    return true;
+  }
   void HandleOutput(LPVOID output) {
     m_root = static_cast<structures::tree *>(output);
     m_currentNode = m_root;
-    if (m_root)
+    if (m_root) {
       m_hasOutput = true;
+      m_currentNode->currentNode = true;
+    }
   }
 
   void HandleDirection(int direction) {
     m_direction = direction;
-    m_directionChanged = true;
+    switch (direction) {
+    case 0: // left
+      if (m_currentNode && m_currentNode->parent)
+        m_currentNode = m_currentNode->switch_to_parent();
+      break;
+    case 1: // up
+      if (m_currentNode && m_currentNode->parent)
+        m_currentNode =
+            m_currentNode->parent->switch_to_prev_child(m_currentNode);
+      break;
+    case 2: // right
+      if (m_currentNode)
+        m_currentNode = m_currentNode->select_child(m_currentNode);
+      break;
+    case 3: // down
+      if (m_currentNode && m_currentNode->parent)
+        m_currentNode =
+            m_currentNode->parent->switch_to_next_child(m_currentNode);
+      break;
+    }
   }
 
 protected:
@@ -207,7 +262,6 @@ protected:
   structures::tree *m_currentNode;
   bool m_hasOutput;
   int m_direction;
-  bool m_directionChanged;
 };
 
 int main(int argc, char *args[]) {

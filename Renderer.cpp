@@ -96,7 +96,7 @@ Renderer::Renderer(const char *const className, LPTHREAD_START_ROUTINE callback,
         MessageBox(NULL, "Dc is NULL", "ERROR!", MB_OK);
 
       SetBkMode(hImgDC, TRANSPARENT);
-      SetTextColor(hImgDC, RGB(47, 67, 47));
+      SetTextColor(hImgDC, RGB(255, 255, 255));
       SetStretchBltMode(hImgDC, COLORONCOLOR);
 
       BITMAPINFO bf;
