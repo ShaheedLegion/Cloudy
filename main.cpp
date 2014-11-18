@@ -186,9 +186,9 @@ public:
 
     if (m_hasOutput) {
       // deal with direction changes here.
-      if (!PrintNodes(dc, m_currentNode, 0)) {
+      if (!PrintNodes(dc, m_currentNode, 1)) {
         if (m_currentNode && m_currentNode->parent)
-          PrintNodes(dc, m_currentNode->parent, 1);
+          PrintNodes(dc, m_currentNode->parent, 2);
       }
     }
   }
@@ -197,7 +197,7 @@ public:
     if (!node)
       return false;
     int xPos = (10 * level) + 20;
-    int yPos = 20;
+    int yPos = (20 * level) + 16;
 
     SetBkMode(dc, OPAQUE);
     SetBkColor(dc, RGB(0, 0, 0));

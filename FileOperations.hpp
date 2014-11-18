@@ -152,7 +152,7 @@ void ListFiles(std::string &directory, structures::tree *node) {
         // Make sure we only do directories.
         if ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 &&
             fileName != "." && fileName != "..") {
-          ListFiles(directory + fileName, node->push_back(fileName));
+          ListFiles(AppendFS(directory, fileName), node->push_back(fileName));
         }
       } while (FindNextFile(fileHandle, &findData));
 
